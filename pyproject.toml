@@ -1,0 +1,77 @@
+[tool.poetry]
+name = "docling-serve"
+version = "0.1.0"
+description = "Running Docling as a service"
+license = "MIT"
+authors = [
+    "Michele Dolfi <dol@zurich.ibm.com>",
+    "Christoph Auer <cau@zurich.ibm.com>",
+    "Panos Vagenas <pva@zurich.ibm.com>",
+    "Cesar Berrospi Ramis <ceb@zurich.ibm.com>",
+   "Peter Staar <taa@zurich.ibm.com>",
+]
+maintainers = [
+    "Peter Staar <taa@zurich.ibm.com>",
+    "Christoph Auer <cau@zurich.ibm.com>",
+    "Michele Dolfi <dol@zurich.ibm.com>",
+    "Cesar Berrospi Ramis <ceb@zurich.ibm.com>",
+    "Panos Vagenas <pva@zurich.ibm.com>",    
+]
+readme = "README.md"
+repository = "https://github.com/DS4SD/docling-serve"
+homepage = "https://github.com/DS4SD/docling-serve"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    # "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Typing :: Typed",
+    "Programming Language :: Python :: 3"
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.10"
+docling = "^1.9.0"
+fastapi = {version = "^0.110.2", extras = ["standard"]}
+uvicorn = "^0.30.6"
+pydantic-settings = "^2.4.0"
+httpx = "^0.27.2"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.8.0"
+isort = "^5.13.2"
+pre-commit = "^3.8.0"
+autoflake = "^2.3.1"
+flake8 = "^7.1.1"
+pytest = "^8.3.2"
+mypy = "^1.11.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 88
+py_version=311
+
+[tool.autoflake]
+in-place = true
+remove-all-unused-imports = true
+remove-unused-variables = true
+expand-star-imports = true
+recursive = true
+
+[[tool.mypy.overrides]]
+module = [
+    "docling.*",
+]
+ignore_missing_imports = true

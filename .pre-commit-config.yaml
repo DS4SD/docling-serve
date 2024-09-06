@@ -1,0 +1,41 @@
+fail_fast: true
+repos:
+  - repo: local
+    hooks:
+      - id: system
+        name: Black
+        entry: poetry run black docling_serve tests
+        pass_filenames: false
+        language: system
+        files: '\.py$'
+  - repo: local
+    hooks:
+      - id: system
+        name: isort
+        entry: poetry run isort docling_serve tests
+        pass_filenames: false
+        language: system
+        files: '\.py$'
+  - repo: local
+    hooks:
+      - id: system
+        name: flake8
+        entry: poetry run flake8 docling_serve
+        pass_filenames: false
+        language: system
+        files: '\.py$'
+  - repo: local
+    hooks:
+      - id: system
+        name: MyPy
+        entry: poetry run mypy docling_serve
+        pass_filenames: false
+        language: system
+        files: '\.py$'
+  - repo: local
+    hooks:
+      - id: system
+        name: Poetry check
+        entry: poetry check --lock
+        pass_filenames: false
+        language: system

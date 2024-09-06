@@ -1,0 +1,7 @@
+[flake8]
+max-line-length = 88
+exclude = test/*
+max-complexity = 18
+docstring-convention = google
+ignore = W503,E203
+classmethod-decorators = classmethod,validator
