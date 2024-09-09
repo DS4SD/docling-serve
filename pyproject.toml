@@ -15,7 +15,7 @@ maintainers = [
     "Christoph Auer <cau@zurich.ibm.com>",
     "Michele Dolfi <dol@zurich.ibm.com>",
     "Cesar Berrospi Ramis <ceb@zurich.ibm.com>",
-    "Panos Vagenas <pva@zurich.ibm.com>",    
+    "Panos Vagenas <pva@zurich.ibm.com>",
 ]
 readme = "README.md"
 repository = "https://github.com/DS4SD/docling-serve"
@@ -29,15 +29,16 @@ classifiers = [
     "Programming Language :: Python :: 3"
 ]
 
-
 [tool.poetry.dependencies]
 python = "^3.10"
-docling = "^1.9.0"
 fastapi = {version = "^0.110.2", extras = ["standard"]}
 uvicorn = "^0.30.6"
 pydantic-settings = "^2.4.0"
 httpx = "^0.27.2"
 
+[tool.poetry.group.docling]
+[tool.poetry.group.docling.dependencies]
+docling = "^1.9.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.8.0"
@@ -51,7 +52,6 @@ mypy = "^1.11.2"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
 
 [tool.black]
 line-length = 88
