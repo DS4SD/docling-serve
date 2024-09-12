@@ -15,7 +15,7 @@ maintainers = [
     "Christoph Auer <cau@zurich.ibm.com>",
     "Michele Dolfi <dol@zurich.ibm.com>",
     "Cesar Berrospi Ramis <ceb@zurich.ibm.com>",
-    "Panos Vagenas <pva@zurich.ibm.com>",    
+    "Panos Vagenas <pva@zurich.ibm.com>",
 ]
 readme = "README.md"
 repository = "https://github.com/DS4SD/docling-serve"
@@ -29,15 +29,39 @@ classifiers = [
     "Programming Language :: Python :: 3"
 ]
 
-
 [tool.poetry.dependencies]
 python = "^3.10"
-docling = "^1.9.0"
+docling = "^1.11.0"
 fastapi = {version = "^0.110.2", extras = ["standard"]}
 uvicorn = "^0.30.6"
 pydantic-settings = "^2.4.0"
 httpx = "^0.27.2"
 
+[tool.poetry.group.pypi-torch]
+optional = false
+
+[tool.poetry.group.pypi-torch.dependencies]
+torch = [
+  {version = "!=2.4.1+cpu" },
+]
+torchvision = [
+  {version = "!=0.19.1+cpu" },
+]
+
+[tool.poetry.group.cpu]
+optional = true
+
+[tool.poetry.group.cpu.dependencies]
+torch = [
+    {markers = 'platform_machine=="x86_64" and sys_platform=="linux" and python_version == "3.10"', url="https://download.pytorch.org/whl/cpu/torch-2.4.1%2Bcpu-cp310-cp310-linux_x86_64.whl"},
+    {markers = 'platform_machine=="x86_64" and sys_platform=="linux" and python_version == "3.11"', url="https://download.pytorch.org/whl/cpu/torch-2.4.1%2Bcpu-cp311-cp311-linux_x86_64.whl"},
+    {markers = 'platform_machine=="x86_64" and sys_platform=="linux" and python_version == "3.12"', url="https://download.pytorch.org/whl/cpu/torch-2.4.1%2Bcpu-cp312-cp312-linux_x86_64.whl"},
+]
+torchvision = [
+    {markers = 'platform_machine=="x86_64" and sys_platform=="linux" and python_version == "3.10"', url="https://download.pytorch.org/whl/cpu/torchvision-0.19.1%2Bcpu-cp310-cp310-linux_x86_64.whl"},
+    {markers = 'platform_machine=="x86_64" and sys_platform=="linux" and python_version == "3.11"', url="https://download.pytorch.org/whl/cpu/torchvision-0.19.1%2Bcpu-cp311-cp311-linux_x86_64.whl"},
+    {markers = 'platform_machine=="x86_64" and sys_platform=="linux" and python_version == "3.12"', url="https://download.pytorch.org/whl/cpu/torchvision-0.19.1%2Bcpu-cp312-cp312-linux_x86_64.whl"},
+]
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.8.0"
@@ -51,7 +75,6 @@ mypy = "^1.11.2"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
 
 [tool.black]
 line-length = 88
