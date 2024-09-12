@@ -7,11 +7,11 @@ on:
 
 env:
   GHCR_REGISTRY: ghcr.io
-  GHCR_DOCLING_SERVE_CPU_IMAGE_NAME: ${{ github.repository }}/ds4sd/docling-serve/cpu
-  GHCR_DOCLING_SERVE_GPU_IMAGE_NAME: ${{ github.repository }}/ds4sd/docling-serve/gpu
+  GHCR_DOCLING_SERVE_CPU_IMAGE_NAME: ${{ github.repository }}/ds4sd/docling-serve-cpu
+  GHCR_DOCLING_SERVE_GPU_IMAGE_NAME: ${{ github.repository }}/ds4sd/docling-serve
   QUAY_REGISTRY: quay.io
-  QUAY_DOCLING_SERVE_CPU_IMAGE_NAME: ds4sd/docling-serve/cpu
-  QUAY_DOCLING_SERVE_GPU_IMAGE_NAME: ds4sd/docling-serve/gpu
+  QUAY_DOCLING_SERVE_CPU_IMAGE_NAME: ds4sd/docling-serve-cpu
+  QUAY_DOCLING_SERVE_GPU_IMAGE_NAME: ds4sd/docling-serve
 
 jobs:
   build_and_publish_ui_image:
@@ -85,7 +85,7 @@ jobs:
           push: true
           tags: ${{ steps.ghcr_serve_cpu_meta.outputs.tags }}
           labels: ${{ steps.ghcr_serve_cpu_meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           file: Containerfile
@@ -129,7 +129,7 @@ jobs:
           push: true
           tags: ${{ steps.quay_serve_cpu_meta.outputs.tags }}
           labels: ${{ steps.quay_serve_cpu_meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           file: Containerfile

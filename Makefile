@@ -18,12 +18,12 @@ TAG=$(shell git rev-parse HEAD)
 
 docling-serve-cpu-image: Containerfile ## Build docling-serve "cpu only" continaer image
 	$(ECHO_PREFIX) printf "  %-12s Containerfile\n" "[docling-serve CPU ONLY]"
-	$(CMD_PREFIX) docker build --build-arg CPU_ONLY=true -f Containerfile --platform linux/amd64 -t ghcr.io/ds4sd/docling-serve/cpu:$(TAG) .
-	$(CMD_PREFIX) docker tag ghcr.io/ds4sd/docling-serve/cpu:$(TAG) ghcr.io/ds4sd/docling-serve/cpu:main
-	$(CMD_PREFIX) docker tag ghcr.io/ds4sd/docling-serve/cpu:$(TAG) quay.io/ds4sd/docling-serve/cpu:main
+	$(CMD_PREFIX) docker build --build-arg CPU_ONLY=true -f Containerfile --platform linux/amd64 -t ghcr.io/ds4sd/docling-serve-cpu:$(TAG) .
+	$(CMD_PREFIX) docker tag ghcr.io/ds4sd/docling-serve-cpu:$(TAG) ghcr.io/ds4sd/docling-serve-cpu:main
+	$(CMD_PREFIX) docker tag ghcr.io/ds4sd/docling-serve-cpu:$(TAG) quay.io/ds4sd/docling-serve-cpu:main
 
 docling-serve-gpu-image: Containerfile ## Build docling-serve continaer image with GPU support
 	$(ECHO_PREFIX) printf "  %-12s Containerfile\n" "[docling-serve with GPU]"
-	$(CMD_PREFIX) docker build --build-arg CPU_ONLY=false -f Containerfile --platform linux/amd64 -t ghcr.io/ds4sd/docling-serve/gpu:$(TAG) .
-	$(CMD_PREFIX) docker tag ghcr.io/ds4sd/docling-serve/gpu:$(TAG) ghcr.io/ds4sd/docling-serve/gpu:main
-	$(CMD_PREFIX) docker tag ghcr.io/ds4sd/docling-serve/gpu:$(TAG) quay.io/ds4sd/docling-serve/gpu:main
+	$(CMD_PREFIX) docker build --build-arg CPU_ONLY=false -f Containerfile --platform linux/amd64 -t ghcr.io/ds4sd/docling-serve:$(TAG) .
+	$(CMD_PREFIX) docker tag ghcr.io/ds4sd/docling-serve:$(TAG) ghcr.io/ds4sd/docling-serve:main
+	$(CMD_PREFIX) docker tag ghcr.io/ds4sd/docling-serve:$(TAG) quay.io/ds4sd/docling-serve:main
