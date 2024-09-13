@@ -1,4 +1,5 @@
 ## Contributing In General
+
 Our project welcomes external contributions. If you have an itch, please feel
 free to scratch it.
 
@@ -34,14 +35,13 @@ maintainers of each component affected.
 
 For a list of the maintainers, see the [MAINTAINERS.md](MAINTAINERS.md) page.
 
-
 ## Legal
 
 Each source file must include a license header for the MIT
 Software. Using the SPDX format is the simplest approach.
 e.g.
 
-```
+```text
 /*
 Copyright IBM Inc. All rights reserved.
 
@@ -60,23 +60,20 @@ must include a sign-off statement in the commit message.
 Here is an example Signed-off-by line, which indicates that the
 submitter accepts the DCO:
 
-```
+```text
 Signed-off-by: John Doe <john.doe@example.com>
 ```
 
 You can include this automatically when you commit a change to your
 local git repository using the following command:
 
-```
+```text
 git commit -s
 ```
-
 
 ## Communication
 
 Please feel free to connect with us using the [discussion section](https://github.com/DS4SD/docling-serve/discussions).
-
-
 
 ## Developing
 
@@ -84,29 +81,32 @@ Please feel free to connect with us using the [discussion section](https://githu
 
 We use Poetry to manage dependencies.
 
-
 #### Install
 
-To install, see the documentation here: https://python-poetry.org/docs/master/#installing-with-the-official-installer
+To install, see the documentation here: <https://python-poetry.org/docs/master/#installing-with-the-official-installer>
 
 1. Install the Poetry globally in your machine
+
     ```bash
     curl -sSL https://install.python-poetry.org | python3 -
     ```
+
     The installation script will print the installation bin folder `POETRY_BIN` which you need in the next steps.
 
 2. Make sure Poetry is in your `$PATH`
     - for `zsh`
+
         ```sh
         echo 'export PATH="POETRY_BIN:$PATH"' >> ~/.zshrc
         ```
+
     - for `bash`
+
         ```sh
         echo 'export PATH="POETRY_BIN:$PATH"' >> ~/.bashrc
         ```
 
 3. The official guidelines linked above include useful details on the configuration of autocomplete for most shell environments, e.g. Bash and Zsh.
-
 
 #### Create a Virtual Environment and Install Dependencies
 
@@ -122,7 +122,7 @@ To spawn a shell with the Virtual Environment activated. If the Virtual Environm
 poetry install
 ```
 
-**(Advanced) Use a Specific Python Version**
+#### (Advanced) Use a Specific Python Version
 
 If for whatever reason you need to work in a specific (older) version of Python, run:
 
@@ -131,7 +131,6 @@ poetry env use $(which python3.10)
 ```
 
 This creates a Virtual Environment with Python 3.10. For other versions, replace `$(which python3.10)` by the path to the interpreter (e.g., `/usr/bin/python3.8`) or use `$(which pythonX.Y)`.
-
 
 #### Add a new dependency
 
@@ -146,7 +145,6 @@ We use the following tools to enforce code style:
 - iSort, to sort imports
 - Black, to format code
 
-
 We run a series of checks on the code base on every commit, using `pre-commit`. To install the hooks, run:
 
 ```bash
@@ -155,10 +153,8 @@ pre-commit install
 
 To run the checks on-demand, run:
 
-```
+```shell
 pre-commit run --all-files
 ```
 
 Note: Checks like `Black` and `isort` will "fail" if they modify files. This is because `pre-commit` doesn't like to see files modified by their Hooks. In these cases, `git add` the modified files and `git commit` again.
-
-
