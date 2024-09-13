@@ -438,3 +438,6 @@ pip-selfcheck.json
 # Docs
 # docs/**/*.png
 # docs/**/*.svg
+
+# Makefile
+.action-lint
