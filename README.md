@@ -5,7 +5,6 @@
  > [!NOTE]
 > This is an unstable draft implementation which will quickly evolve.
 
-
 ## Development
 
 Install the dependencies

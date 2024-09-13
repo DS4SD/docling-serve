@@ -18,8 +18,11 @@ endif
 
 TAG=$(shell git rev-parse HEAD)
 
-lint:
+action-lint-file:
 	$(CMD_PREFIX) touch .action-lint
+
+md-lint-file:
+	$(CMD_PREFIX) touch .markdown-lint
 
 .PHONY: docling-serve-cpu-image
 docling-serve-cpu-image: Containerfile ## Build docling-serve "cpu only" continaer image
@@ -37,7 +40,7 @@ docling-serve-gpu-image: Containerfile ## Build docling-serve continaer image wi
 
 .PHONY: action-lint
 action-lint: .action-lint ##      Lint GitHub Action workflows
-.action-lint: $(shell find .github -type f) | lint
+.action-lint: $(shell find .github -type f) | action-lint-file
 	$(ECHO_PREFIX) printf "  %-12s .github/...\n" "[ACTION LINT]"
 	$(CMD_PREFIX) if ! which actionlint $(PIPE_DEV_NULL) ; then \
 		echo "Please install actionlint." ; \
@@ -51,3 +54,22 @@ action-lint: .action-lint ##      Lint GitHub Action workflows
 	fi
 	$(CMD_PREFIX) actionlint -color
 	$(CMD_PREFIX) touch $@
+
+.PHONY: md-lint
+md-lint: .md-lint ##      Lint markdown files
+.md-lint: $(wildcard */**/*.md) | md-lint-file
+	$(ECHO_PREFIX) printf "  %-12s ./...\n" "[MD LINT]"
+	$(CMD_PREFIX) docker run --rm -v $$(pwd):/workdir davidanson/markdownlint-cli2:v0.14.0 "**/*.md"
+	$(CMD_PREFIX) touch $@
+
+
+.PHONY: py-Lint
+py-lint: ##      Lint Python files
+	$(ECHO_PREFIX) printf "  %-12s ./...\n" "[PY LINT]"
+	$(CMD_PREFIX) if ! which poetry $(PIPE_DEV_NULL) ; then \
+		echo "Please install poetry." ; \
+		echo "pip install poetry" ; \
+		exit 1 ; \
+	fi
+	$(CMD_PREFIX) poetry install --all-extras
+	$(CMD_PREFIX) poetry run pre-commit run --all-files
