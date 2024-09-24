@@ -10,6 +10,9 @@
 Install the dependencies
 
 ```sh
+# Install poetry if not already available
+curl -sSL https://install.python-poetry.org | python3 -
+
 # Install dependencies
 poetry install
 
