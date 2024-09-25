@@ -10,6 +10,9 @@
 Install the dependencies
 
 ```sh
+# Install poetry if not already available
+curl -sSL https://install.python-poetry.org | python3 -
+
 # Install dependencies
 poetry install
 
@@ -29,4 +32,25 @@ curl -X 'POST' \
     "url": "https://arxiv.org/pdf/2206.01062"
   }
 }'
+```
+
+### Cuda GPU Support
+
+For GPU support try the following:
+
+```sh
+# Create a virtual env
+python3 -m venv venv
+
+# Activate the venv
+source venv/bin/active
+
+# Install torch with the special index
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+
+# Install the package
+pip install -e .
+
+# Run the server
+poetry run uvicorn docling_serve.app:app --reload
 ```
