@@ -35,8 +35,7 @@ requires-python = ">=3.10"
 dependencies = [
     "docling-slim[standard,service-client,models-remote,format-opendocument]>=2.118.0,<3.0.0",
     "docling-core>=2.79.0",
-    # "docling-jobkit[rq,ray,vlm,azure,gcloudstorage,gdrive]>=3.5.0,<4",
-    "docling-jobkit[rq,ray,vlm,azure,gcloudstorage,gdrive]",
+    "docling-jobkit[rq,ray,vlm,azure,gcloudstorage,gdrive]>=3.5.0,<4",
     "fastapi[standard]<0.137.0",
     "httpx~=0.28",
     "pydantic~=2.10",
@@ -202,7 +201,7 @@ triton-rocm = [
 ]
 
 # docling-slim = { git = "https://github.com/docling-project/docling/", rev = "main" }
-docling-jobkit = { git = "https://github.com/docling-project/docling-jobkit/", rev = "a2532b512a89e89c05d1284c73a6562e3110091d" }
+# docling-jobkit = { git = "https://github.com/docling-project/docling-jobkit/", rev = "a2532b512a89e89c05d1284c73a6562e3110091d" }
 # docling-jobkit = { path = "../docling-jobkit", editable = true }
 
 
