@@ -317,6 +317,10 @@ class DoclingServeSettings(BaseSettings):
     # Logging
     eng_ray_log_level: str = "INFO"
 
+    # Metrics
+    eng_ray_generate_metrics: bool = False
+    eng_ray_metrics_port: int = 8090
+
     # Tenant ID Header
     eng_ray_tenant_id_header: str = "X-Tenant-Id"
 

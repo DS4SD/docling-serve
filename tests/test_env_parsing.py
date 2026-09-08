@@ -122,3 +122,17 @@ def test_prefixed_env_var_deprecated_aliases(monkeypatch):
     settings = DoclingServeSettings()
     assert settings.eng_ray_converter_actor_num_cpus == 3.0
     assert settings.eng_ray_converter_actor_memory_request == "8Gi"
+
+
+def test_ray_metrics_defaults():
+    settings = DoclingServeSettings()
+    assert settings.eng_ray_generate_metrics is False
+    assert settings.eng_ray_metrics_port == 8090
+
+
+def test_ray_metrics_from_env(monkeypatch):
+    monkeypatch.setenv("DOCLING_SERVE_ENG_RAY_GENERATE_METRICS", "true")
+    monkeypatch.setenv("DOCLING_SERVE_ENG_RAY_METRICS_PORT", "9090")
+    settings = DoclingServeSettings()
+    assert settings.eng_ray_generate_metrics is True
+    assert settings.eng_ray_metrics_port == 9090

@@ -307,6 +307,9 @@ def get_async_orchestrator() -> BaseOrchestrator:
             # Logging
             log_level=docling_serve_settings.eng_ray_log_level,
             debug_error_details=docling_serve_settings.debug_error_details,
+            # Metrics
+            generate_metrics=docling_serve_settings.eng_ray_generate_metrics,
+            metrics_port=docling_serve_settings.eng_ray_metrics_port,
         )
 
         return RayOrchestrator(config=ray_config, converter_manager=cm)

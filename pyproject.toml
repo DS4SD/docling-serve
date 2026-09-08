@@ -166,6 +166,7 @@ override-dependencies = [
   "xgrammar>=0.1.24",
   "grpcio>=1.75.1",
   "cryptography>=46.0.7",
+  #"transformers>=5.9.0,<=5.14.1",
 ]
 
 [tool.uv.sources]
@@ -200,8 +201,9 @@ triton-rocm = [
 ]
 
 # docling-slim = { git = "https://github.com/docling-project/docling/", rev = "main" }
-# docling-jobkit = { git = "https://github.com/docling-project/docling-jobkit/", branch = "main" }
+# docling-jobkit = { git = "https://github.com/docling-project/docling-jobkit/", rev = "a2532b512a89e89c05d1284c73a6562e3110091d" }
 # docling-jobkit = { path = "../docling-jobkit", editable = true }
+
 
 [[tool.uv.index]]
 name = "pytorch-pypi"
