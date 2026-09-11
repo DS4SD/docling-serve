@@ -133,6 +133,11 @@ def test_ray_config_passes_presigned_storage_when_enabled(monkeypatch):
     )
     monkeypatch.setattr(
         factory_module.docling_serve_settings,
+        "artifact_storage_region",
+        "us-east-2",
+    )
+    monkeypatch.setattr(
+        factory_module.docling_serve_settings,
         "artifact_storage_verify_ssl",
         False,
     )
@@ -185,6 +190,7 @@ def test_ray_config_passes_presigned_storage_when_enabled(monkeypatch):
     config = orchestrator.config.presigned_config
     assert config is not None
     assert config.s3_coords.endpoint == "s3.example.com"
+    assert config.s3_coords.region == "us-east-2"
     assert config.s3_coords.verify_ssl is False
     assert config.s3_coords.bucket == "bucket-a"
     assert config.s3_coords.access_key == "key-a"

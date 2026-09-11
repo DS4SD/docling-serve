@@ -156,6 +156,7 @@ class DoclingServeSettings(BaseSettings):
     artifact_storage_enabled: bool = False
     artifact_storage_backend: Literal["s3", "azure"] = "s3"
     artifact_storage_endpoint: str = ""
+    artifact_storage_region: str = ""
     artifact_storage_verify_ssl: bool = True
     artifact_storage_bucket: str = ""
     artifact_storage_access_key: str = ""

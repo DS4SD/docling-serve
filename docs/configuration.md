@@ -44,6 +44,7 @@ THe following table describes the options to configure the Docling Serve app.
 |  | `DOCLING_SERVE_ARTIFACT_STORAGE_ENABLED` | `false` | Enable server-managed artifact storage for `PresignedUrlTarget`. |
 |  | `DOCLING_SERVE_ARTIFACT_STORAGE_BACKEND` | `s3` | Managed artifact-storage backend: `s3` or `azure`. |
 |  | `DOCLING_SERVE_ARTIFACT_STORAGE_ENDPOINT` |  | S3 endpoint without protocol. |
+|  | `DOCLING_SERVE_ARTIFACT_STORAGE_REGION` | unset | AWS region of the S3 bucket, e.g. `us-east-2`. Required for correctly signed requests (including presigned URLs) against real AWS S3 buckets outside `us-east-1`. Not required for S3-compatible services (e.g. IBM COS, MinIO) that ignore region. |
 |  | `DOCLING_SERVE_ARTIFACT_STORAGE_VERIFY_SSL` | `true` | Whether the S3 artifact-storage connection verifies TLS certificates. Set this to `false` for local HTTP or self-signed MinIO setups. |
 |  | `DOCLING_SERVE_ARTIFACT_STORAGE_BUCKET` |  | S3 bucket for managed artifacts. |
 |  | `DOCLING_SERVE_ARTIFACT_STORAGE_ACCESS_KEY` |  | S3 access key. |
