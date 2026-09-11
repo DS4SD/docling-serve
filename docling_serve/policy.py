@@ -2,16 +2,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Annotated, Any, TypeVar, Union, get_args
+from urllib.parse import urlparse
 
 from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, create_model
 
-from docling.datamodel.service.options import ConvertDocumentsOptions
+from docling.datamodel.base_models import FormatToExtensions
+from docling.datamodel.service.options import (
+    ConvertDocumentsOptions,
+    ExtractDocumentsOptions,
+)
 from docling.datamodel.service.requests import (
     BaseChunkDocumentsRequest,
     BatchConvertSourcesRequest,
     BatchSourceRequestItem,
     ConvertSourcesRequest,
+    ExtractSourcesRequest,
+    ExtractTargetRequest,
     KnownBatchSourceRequestItem,
     KnownBatchTargetRequest,
     SourceRequestItem,
@@ -28,6 +35,10 @@ from docling_jobkit.connectors.connector_factory import (
     TargetConnectorFactory,
     get_source_connector_factory,
     get_target_connector_factory,
+)
+from docling_jobkit.convert.extraction_manager import (
+    DocumentExtractionManager,
+    DocumentExtractionManagerConfig,
 )
 
 from docling_serve.settings import DoclingServeSettings
@@ -73,7 +84,11 @@ _REMOTE_EXCLUDED_TARGET_KINDS = frozenset({"local_path"})
 
 
 def validate_source_target_pairing(
-    sources: list[Any], target: Any, policy: ServicePolicy
+    sources: list[Any],
+    target: Any,
+    policy: ServicePolicy,
+    *,
+    storage_modes: frozenset[str] = frozenset({"artifacts", "database"}),
 ) -> None:
     """Reject expandable sources paired with a non-storage target.
 
@@ -97,7 +112,7 @@ def validate_source_target_pairing(
     # Expandable sources require a storage-style target that can handle one or
     # more outputs per discovered document. Both artifact storage targets and
     # database targets satisfy that requirement.
-    if expandable and result_mode not in {"artifacts", "database"}:
+    if expandable and result_mode not in storage_modes:
         target_kind = target.kind if target is not None else None
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -124,6 +139,7 @@ class ServicePolicy:
     allowed_image_export_modes: frozenset[str]
     source_factory: SourceConnectorFactory
     target_factory: TargetConnectorFactory
+    extraction_manager: DocumentExtractionManager
 
 
 def _configured_types(
@@ -238,6 +254,48 @@ def build_batch_request_model(
     return model
 
 
+def build_extract_request_model(
+    policy: ServicePolicy, default_target: Any
+) -> type[ExtractSourcesRequest]:
+    """Build the closed extraction request model advertised by this deployment."""
+    known_sources = _models_by_kind(KnownBatchSourceRequestItem)
+    source_models = {
+        kind: model
+        for kind, model in known_sources.items()
+        if kind in policy.allowed_source_types
+    }
+    source_models.update(
+        {
+            kind: model
+            for kind, model in policy.source_factory.registered_config_types_by_kind.items()
+            if kind in policy.allowed_source_types and kind not in source_models
+        }
+    )
+
+    target_models = {
+        kind: model
+        for kind, model in _models_by_kind(ExtractTargetRequest).items()
+        if kind in policy.allowed_target_types
+    }
+    target_models.update(
+        {
+            kind: model
+            for kind, model in _artifact_target_models(policy.target_factory).items()
+            if kind in policy.allowed_target_types and kind not in target_models
+        }
+    )
+    source_union = _closed_union(source_models)
+    target_union = _closed_union(target_models)
+    model = create_model(
+        "ExtractSourcesRequest",
+        __base__=ExtractSourcesRequest,
+        sources=(list[source_union], Field(min_length=1)),  # type: ignore[valid-type]
+        target=(target_union, default_target),
+    )
+    model.model_json_schema()
+    return model
+
+
 def build_service_policy(settings: DoclingServeSettings) -> ServicePolicy:
     ocr_factory = get_ocr_factory(
         allow_external_plugins=settings.allow_external_plugins
@@ -279,6 +337,23 @@ def build_service_policy(settings: DoclingServeSettings) -> ServicePolicy:
             set(settings.allowed_image_export_modes) & valid_modes
         )
 
+    extraction_manager = DocumentExtractionManager(
+        DocumentExtractionManagerConfig(
+            artifacts_path=settings.artifacts_path,
+            options_cache_size=settings.options_cache_size,
+            enable_remote_services=settings.enable_remote_services,
+            allow_external_plugins=settings.allow_external_plugins,
+            max_num_pages=settings.max_num_pages,
+            max_file_size=settings.max_file_size,
+            allowed_formats=settings.allowed_extraction_formats,
+            default_extraction_preset=settings.default_extraction_preset,
+            allowed_extraction_presets=settings.allowed_extraction_presets,
+            allow_custom_extraction_config=settings.allow_custom_extraction_config,
+            allowed_extraction_engines=settings.allowed_extraction_engines,
+        )
+    )
+    extraction_manager.resolve_extraction_model(ExtractDocumentsOptions(template={}))
+
     return ServicePolicy(
         max_document_timeout=settings.max_document_timeout,
         max_images_scale=settings.max_images_scale,
@@ -293,6 +368,7 @@ def build_service_policy(settings: DoclingServeSettings) -> ServicePolicy:
         allowed_image_export_modes=frozenset(allowed_image_export_modes),
         source_factory=source_factory,
         target_factory=target_factory,
+        extraction_manager=extraction_manager,
     )
 
 
@@ -512,6 +588,84 @@ def validate_batch_convert_request(
 
     for t in effective_targets:
         validate_source_target_pairing(request.sources, t, policy)
+
+
+def validate_extract_request(
+    request: ExtractSourcesRequest, policy: ServicePolicy
+) -> None:
+    validate_source_kinds(request.sources, policy)
+    validate_target_kind(request.target.kind, policy)
+    allowed_formats = policy.extraction_manager.config.allowed_formats
+    if allowed_formats is not None:
+        for source in request.sources:
+            if policy.source_factory.is_expandable(source):
+                continue
+            name = getattr(source, "filename", None)
+            if name is None and (url := getattr(source, "url", None)) is not None:
+                name = urlparse(str(url)).path
+            if not name:
+                continue
+            lower_name = str(name).lower()
+            detected = next(
+                (
+                    fmt
+                    for fmt, extensions in FormatToExtensions.items()
+                    if any(lower_name.endswith(f".{ext.lower()}") for ext in extensions)
+                ),
+                None,
+            )
+            if detected is not None and detected not in allowed_formats:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    detail=(
+                        f"Input format '{detected.value}' is not allowed for extraction. "
+                        f"Allowed values: {sorted(fmt.value for fmt in allowed_formats)}."
+                    ),
+                )
+    if request.callbacks and not policy.callbacks_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Callbacks are disabled by server policy.",
+        )
+    if len(request.sources) > policy.max_sources_per_request:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=(
+                f"Too many sources: {len(request.sources)} exceeds the "
+                f"maximum of {policy.max_sources_per_request}."
+            ),
+        )
+    if (
+        isinstance(request.target, PresignedUrlTarget)
+        and not policy.artifact_storage_enabled
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=(
+                "Presigned URL target requires artifact storage to be configured "
+                "and enabled on the server."
+            ),
+        )
+    if (
+        policy.target_factory.supports(request.target)
+        and policy.target_factory.result_mode(request.target) == "database"
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Database/vector targets are not supported for extraction.",
+        )
+    try:
+        policy.extraction_manager.resolve_extraction_model(request.options)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
+    validate_source_target_pairing(
+        request.sources,
+        request.target,
+        policy,
+        storage_modes=frozenset({"artifacts", "presigned"}),
+    )
 
 
 def validate_chunk_request(

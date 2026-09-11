@@ -1,14 +1,22 @@
+from types import SimpleNamespace
 from typing import Annotated, Literal
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import HTTPException
+from httpx import ASGITransport, AsyncClient
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, ValidationError
 
-from docling.datamodel.service.options import ConvertDocumentsOptions
+from docling.datamodel.extraction_options import ExtractionVlmOptions
+from docling.datamodel.service.options import (
+    ConvertDocumentsOptions,
+    ExtractDocumentsOptions,
+)
 from docling.datamodel.service.requests import (
     AzureBlobSourceRequest,
     BatchConvertSourcesRequest,
     ConvertSourcesRequest,
+    ExtractSourcesRequest,
     FileSourceRequest,
     GoogleCloudStorageSourceRequest,
     GoogleDriveSourceRequest,
@@ -23,25 +31,37 @@ from docling.datamodel.service.targets import (
     PresignedUrlTarget,
     S3Target,
 )
+from docling.datamodel.service.tasks import TaskType
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
+from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling_jobkit.connectors.connector_factory import SourceConnectorFactory
 from docling_jobkit.connectors.source_processor import BaseSourceProcessor
+from docling_jobkit.datamodel.task import Task
 
+from docling_serve.app import create_app
 from docling_serve.datamodel.convert import ConvertDocumentsRequestOptions
+from docling_serve.orchestrator_factory import get_async_orchestrator
 from docling_serve.policy import (
     ALL_SOURCE_TYPES,
     ALL_TARGET_TYPES,
     _source_kinds,
     build_batch_request_model,
+    build_extract_request_model,
     build_service_policy,
     normalize_convert_options,
     normalize_request,
     validate_batch_convert_request,
     validate_convert_options,
     validate_convert_request,
+    validate_extract_request,
     validate_source_target_pairing,
     validate_target_kind,
 )
-from docling_serve.settings import DoclingServeSettings
+from docling_serve.settings import (
+    AsyncEngine,
+    DoclingServeSettings,
+    docling_serve_settings,
+)
 
 
 def test_convert_options_shim_points_to_shared_type():
@@ -553,3 +573,179 @@ def test_validate_batch_convert_request_rejects_disallowed_source_type():
 
     with pytest.raises(HTTPException, match="source kind 's3' is not allowed"):
         validate_batch_convert_request(request, policy)
+
+
+def test_extract_request_model_has_one_closed_target():
+    policy = build_service_policy(DoclingServeSettings())
+
+    model = build_extract_request_model(policy, InBodyTarget())
+
+    assert "targets" not in model.model_fields
+    assert model.model_fields["target"].default.kind == "inbody"
+
+
+def test_extract_policy_rejects_disallowed_preset():
+    policy = build_service_policy(
+        DoclingServeSettings(allowed_extraction_presets=["nuextract_2b"])
+    )
+    request = ExtractSourcesRequest(
+        options=ExtractDocumentsOptions(
+            template="x", extraction_preset="granite_vision_4_1"
+        ),
+        sources=[HttpSourceRequest(url="https://example.com/test.pdf")],
+    )
+
+    with pytest.raises(HTTPException, match="not allowed"):
+        validate_extract_request(request, policy)
+
+
+def test_extract_policy_rejects_custom_config():
+    policy = build_service_policy(DoclingServeSettings())
+    request = ExtractSourcesRequest(
+        options=ExtractDocumentsOptions(
+            template="x", extraction_custom_config={"model_spec": {}}
+        ),
+        sources=[HttpSourceRequest(url="https://example.com/test.pdf")],
+    )
+
+    with pytest.raises(HTTPException, match="Custom extraction configuration"):
+        validate_extract_request(request, policy)
+
+
+def test_extract_policy_rejects_remote_engine_when_remote_services_are_disabled():
+    custom = ExtractionVlmOptions.from_preset("nuextract_2b").model_copy(
+        update={"engine_options": ApiVlmEngineOptions(engine_type=VlmEngineType.API)}
+    )
+    policy = build_service_policy(
+        DoclingServeSettings(allow_custom_extraction_config=True)
+    )
+    request = ExtractSourcesRequest(
+        options=ExtractDocumentsOptions(template="x", extraction_custom_config=custom),
+        sources=[HttpSourceRequest(url="https://example.com/test.pdf")],
+    )
+
+    with pytest.raises(HTTPException, match="Remote extraction services are disabled"):
+        validate_extract_request(request, policy)
+
+
+def test_extract_policy_rejects_disallowed_default_engine_at_startup():
+    with pytest.raises(ValueError, match=r"Extraction engine.*not allowed"):
+        build_service_policy(DoclingServeSettings(allowed_extraction_engines=["api"]))
+
+
+def test_extract_policy_rejects_known_disallowed_format():
+    policy = build_service_policy(
+        DoclingServeSettings(allowed_extraction_formats=["image"])
+    )
+    request = ExtractSourcesRequest(
+        options=ExtractDocumentsOptions(template="x"),
+        sources=[HttpSourceRequest(url="https://example.com/test.pdf")],
+    )
+
+    with pytest.raises(HTTPException, match="Input format 'pdf' is not allowed"):
+        validate_extract_request(request, policy)
+
+
+def test_extract_policy_rejects_expandable_inbody():
+    policy = build_service_policy(DoclingServeSettings())
+    request = ExtractSourcesRequest(
+        options=ExtractDocumentsOptions(template="x"),
+        sources=[
+            S3SourceRequest(
+                endpoint="s3.example.com",
+                access_key="key",
+                secret_key="secret",
+                bucket="bucket",
+            )
+        ],
+    )
+
+    with pytest.raises(HTTPException, match="require a storage target"):
+        validate_extract_request(request, policy)
+
+
+def test_extract_policy_allows_expandable_presigned_target():
+    policy = build_service_policy(DoclingServeSettings(artifact_storage_enabled=True))
+    request = ExtractSourcesRequest(
+        options=ExtractDocumentsOptions(template="x"),
+        sources=[
+            S3SourceRequest(
+                endpoint="s3.example.com",
+                access_key="key",
+                secret_key="secret",
+                bucket="bucket",
+            )
+        ],
+        target=PresignedUrlTarget(),
+    )
+
+    validate_extract_request(request, policy)
+
+
+def test_openapi_only_exposes_async_source_extraction():
+    paths = create_app().openapi()["paths"]
+
+    assert "/v1/extract/source/async" in paths
+    assert "/v1/extract/source" not in paths
+    assert "/v1/extract/file" not in paths
+    assert "/v1/extract/file/async" not in paths
+
+
+@pytest.mark.asyncio
+async def test_ray_extract_endpoint_enqueues_one_target_with_dict_template(monkeypatch):
+    orchestrator = SimpleNamespace(
+        enqueue=AsyncMock(
+            return_value=Task(task_id="extract-1", task_type=TaskType.EXTRACT)
+        ),
+        get_queue_position=AsyncMock(return_value=0),
+    )
+    app = create_app()
+    app.dependency_overrides[get_async_orchestrator] = lambda: orchestrator
+    monkeypatch.setattr(docling_serve_settings, "eng_kind", AsyncEngine.RAY)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.post(
+            "/v1/extract/source/async",
+            json={
+                "options": {
+                    "template": {"invoice": {"total": "number"}},
+                    "extraction_preset": "nuextract_2b",
+                    "input_channels": "text",
+                },
+                "sources": [{"kind": "http", "url": "https://example.com/test.md"}],
+            },
+        )
+
+    assert response.status_code == 200
+    request = orchestrator.enqueue.await_args.kwargs
+    assert request["task_type"] == TaskType.EXTRACT
+    assert request["extract_options"].template == {"invoice": {"total": "number"}}
+    assert [target.kind for target in request["targets"]] == ["inbody"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("engine", [AsyncEngine.LOCAL, AsyncEngine.RQ])
+async def test_unsupported_engine_rejects_extraction_before_enqueue(
+    monkeypatch, engine
+):
+    monkeypatch.setattr(docling_serve_settings, "eng_kind", engine)
+    orchestrator = SimpleNamespace(enqueue=AsyncMock())
+    app = create_app()
+    app.dependency_overrides[get_async_orchestrator] = lambda: orchestrator
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.post(
+            "/v1/extract/source/async",
+            json={
+                "options": {"template": "x"},
+                "sources": [{"kind": "http", "url": "https://example.com/test.pdf"}],
+            },
+        )
+
+    assert response.status_code == 501
+    assert f"'{engine.value}' engine" in response.json()["detail"]
+    orchestrator.enqueue.assert_not_awaited()

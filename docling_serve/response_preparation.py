@@ -6,6 +6,8 @@ from docling.datamodel.service.responses import (
     ConvertDocumentResponse,
     DoclingTaskResult,
     ExportResult,
+    ExtractDocumentResponse,
+    ExtractionTaskResult,
     PresignedArtifactResult,
     PresignedUrlConvertDocumentResponse,
     PresignedUrlConvertResponse,
@@ -31,8 +33,18 @@ async def prepare_response(
         | PresignedUrlConvertDocumentResponse
         | PresignedUrlConvertResponse
         | ChunkDocumentResponse
+        | ExtractDocumentResponse
     )
-    if isinstance(task_result.result, ExportResult):
+    if isinstance(task_result.result, ExtractionTaskResult):
+        response = ExtractDocumentResponse(
+            documents=task_result.result.documents,
+            processing_time=task_result.processing_time,
+            num_converted=task_result.num_converted,
+            num_succeeded=task_result.num_succeeded,
+            num_partially_succeeded=task_result.num_partially_succeeded,
+            num_failed=task_result.num_failed,
+        )
+    elif isinstance(task_result.result, ExportResult):
         response = ConvertDocumentResponse(
             document=task_result.result.document,
             status=task_result.result.status,
