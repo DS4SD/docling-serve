@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+# Runtime credentials are injected through secret environment variables.
+eng_kind: local
+eng_loc_num_workers: 1
+eng_loc_share_models: true
+load_models_at_boot: true
+options_cache_size: 1
+enable_ui: false
+enable_management_endpoints: false
+show_version_info: false
+debug_error_details: false
+enable_remote_services: false
+allow_external_plugins: false
+allow_custom_vlm_config: false
+allow_custom_picture_description_config: false
+allow_custom_code_formula_config: false
+max_sources_per_request: 1
+max_num_pages: 20
+max_file_size: 10485760
+max_document_timeout: 300
+max_sync_wait: 30
+single_use_results: true
+result_removal_delay: 3600
+artifact_storage_enabled: true
+artifact_storage_backend: s3
+artifact_storage_verify_ssl: true
+artifact_storage_key_prefix: docling-example/
+artifact_storage_presign_ttl_seconds: 3600
+allowed_target_types:
+  - presigned_url

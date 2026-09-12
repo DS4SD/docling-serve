@@ -6,6 +6,7 @@ Choose the deployment option that best fits your setup.
 
 - **[Local GPU NVIDIA](#local-gpu-nvidia)**: For deploying the application locally on a machine with a supported NVIDIA GPU (using Docker Compose).
 - **[Local GPU AMD](#local-gpu-amd)**: For deploying the application locally on a machine with a supported AMD GPU (using Docker Compose).
+- **[Nebius Serverless](#nebius-serverless)**: A single-GPU Endpoint with asynchronous conversion and Object Storage results.
 - **[OpenShift](#openshift)**: For deploying the application on an OpenShift cluster, designed for cloud-native environments.
 
 ---
@@ -190,6 +191,14 @@ Docs:
     ```
 
 </details>
+
+## Nebius Serverless
+
+See the [Nebius Serverless Endpoint guide](./deploy-examples/nebius-serverless/README.md)
+and [configuration example](./deploy-examples/nebius-serverless/docling-config.yaml).
+The example serves a trusted client with one local worker; exported objects persist
+independently, while task status is lost if the server process is replaced.
+The guide records a validated L40S configuration and the limits of its live checks.
 
 ## OpenShift
 
